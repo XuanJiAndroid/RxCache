@@ -39,13 +39,15 @@ public final class RetrieveRecord extends Action {
   <T> Record<T> retrieveRecord(String providerKey, String dynamicKey, String dynamicKeyGroup,
       boolean useExpiredDataIfLoaderNotAvailable, Long lifeTime, boolean isEncrypted) {
     String composedKey = composeKey(providerKey, dynamicKey, dynamicKeyGroup);
-
+    //根据key从内存中读数据
     Record<T> record = memory.getIfPresent(composedKey);
 
     if (record != null) {
+      //内存不为空,将source标记为内存
       record.setSource(Source.MEMORY);
     } else {
       try {
+        //为空就从磁盘读取,将source标记为磁盘
         record = persistence.retrieveRecord(composedKey, isEncrypted, encryptKey);
         record.setSource(Source.PERSISTENCE);
         memory.put(composedKey, record);
@@ -56,7 +58,9 @@ public final class RetrieveRecord extends Action {
 
     record.setLifeTime(lifeTime);
 
-    if (hasRecordExpired.hasRecordExpired(record)) {
+    //判断超时时间   2019年10月26日去掉删除缓存过期的逻辑
+    /*if (hasRecordExpired.hasRecordExpired(record)) {
+      //下面就是根据EvictDynamicKey/EvictDynamicKeyGroup做缓存清除的工作,根据作者Github介绍,RxCache支持类似于Spring的@CacheEvict功能
       if (!dynamicKeyGroup.isEmpty()) {
         evictRecord.evictRecordMatchingDynamicKeyGroup(providerKey, dynamicKey,
             dynamicKeyGroup);
@@ -67,7 +71,7 @@ public final class RetrieveRecord extends Action {
       }
 
       return useExpiredDataIfLoaderNotAvailable ? record : null;
-    }
+    }*/
 
     return record;
   }

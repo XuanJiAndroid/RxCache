@@ -55,7 +55,11 @@ public final class DeleteRecordMatchingClassName {
     return Observable.just(1);
   }
 
+  //数据迁移过程
   private boolean evictRecord(io.rx_cache2.internal.Record record) {
+    //加入判断是否为空的处理，否则会空指针
+      if(record == null)
+        return false;
     String candidate = record.getDataClassName();
 
     for (Class aClass : classes) {

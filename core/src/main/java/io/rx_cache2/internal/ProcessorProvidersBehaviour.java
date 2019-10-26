@@ -52,8 +52,11 @@ public final class ProcessorProvidersBehaviour implements ProcessorProviders {
   private Observable<Integer> startProcesses(
       io.rx_cache2.internal.migration.DoMigrations doMigrations,
       final io.rx_cache2.internal.cache.EvictExpiredRecordsPersistence evictExpiredRecordsPersistence) {
-    Observable<Integer> oProcesses = doMigrations.react().flatMap(new Function<Integer, ObservableSource<Integer>>() {
+    // 处理迁移数据
+   /* Observable<Integer> oProcesses = doMigrations.react()
+            .flatMap(new Function<Integer, ObservableSource<Integer>>() {
           @Override public ObservableSource<Integer> apply(Integer ignore) throws Exception {
+            // 删除所有过期数据
             return evictExpiredRecordsPersistence.startEvictingExpiredRecords();
           }
         }).subscribeOn((Schedulers.io())).observeOn(Schedulers.io()).share();
@@ -63,7 +66,7 @@ public final class ProcessorProvidersBehaviour implements ProcessorProviders {
       @Override public void accept(Integer ignore) throws Exception {
         hasProcessesEnded = true;
       }
-    });
+    });*/
 
     return oProcesses;
   }
@@ -106,6 +109,7 @@ public final class ProcessorProvidersBehaviour implements ProcessorProviders {
     });
   }
 
+  //在缓存过期之后，网络请求失败的同时，依然会处理过期数据
   private Observable<Reply> getDataFromLoader(final io.rx_cache2.ConfigProvider configProvider,
       final Record record) {
     return configProvider.getLoaderObservable().map(new Function<Object, Reply>() {
@@ -133,7 +137,8 @@ public final class ProcessorProvidersBehaviour implements ProcessorProviders {
       }
     }).onErrorReturn(new Function<Object, Object>() {
       @Override public Object apply(Object o) throws Exception {
-        clearKeyIfNeeded(configProvider);
+        // 如果网络错误，会判断这个 provider 的数据是否过期，如果过期，就删除掉
+//        clearKeyIfNeeded(configProvider);
 
         boolean useExpiredData = configProvider.useExpiredDataIfNotLoaderAvailable() != null ?
             configProvider.useExpiredDataIfNotLoaderAvailable()
